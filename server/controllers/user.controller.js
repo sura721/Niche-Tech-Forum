@@ -1,7 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
 import Post from '../models/Post.js';
-
 const getUserProfile = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select('username email bio createdAt');
     if (user) {
