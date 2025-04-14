@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronUpIcon, ChevronDownIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import {
     usePostStore,
@@ -8,14 +8,15 @@ import {
     selectPostsError,
     selectIsDeletingPost,
     selectEditDeleteError,
-} from '../store/postStore';
-import { useAuthStore, selectIsAuthenticated, selectUserInfo } from '../store/authStore.store';
-import ReplyItem from '../components/ReplyItem'; 
-import CreateReplyForm from '../components/CreateReplyForm'; 
+} from '../store/postStore'; // Assuming store setup follows convention
+import { useAuthStore, selectIsAuthenticated, selectUserInfo } from '../store/authStore.store'; // Assuming store setup follows convention
+import ReplyItem from '../components/ReplyItem';
+import CreateReplyForm from '../components/CreateReplyForm';
 
 function PostDetailPage() {
     const { postId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const post = usePostStore(selectCurrentPost);
     const isLoading = usePostStore(selectPostsLoadingSingle);
@@ -51,6 +52,9 @@ function PostDetailPage() {
     const handleReplySuccess = () => {
         setIsReplyFormVisible(false);
         setAreRepliesVisible(true);
+        if (postId) {
+             fetchPostById(postId); // Re-fetch post to show new reply immediately
+        }
     };
 
     const handleDelete = async () => {
@@ -60,12 +64,26 @@ function PostDetailPage() {
                 await deletePostAction(postId);
                 navigate('/');
             } catch (error) {
+                // Error is handled by the store and displayed via editDeleteError
             }
         }
     };
 
     const handleEdit = () => {
         navigate(`/posts/${postId}/edit`);
+    };
+
+    const handleReplyButtonClick = () => {
+        if (isAuthenticated) {
+            setIsReplyFormVisible(true);
+        } else {
+            navigate('/login', {
+                state: {
+                    message: 'Please sign in to reply.',
+                    from: location.pathname
+                }
+            });
+        }
     };
 
     if (isLoading) {
@@ -125,10 +143,8 @@ function PostDetailPage() {
     });
 
     return (
-     
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
 
-        
             {editDeleteError && (
                 <div className="mb-6 p-4 bg-red-900/60 border border-red-700/60 text-red-200 text-center rounded-lg text-sm">
                     <p className="font-medium">{editDeleteError}</p>
@@ -137,10 +153,8 @@ function PostDetailPage() {
 
             <div className="pb-6 md:pb-8 border-b border-gray-700/50 mb-8 md:mb-10">
                 <div className="flex justify-between items-start gap-4">
-   
                     <div className="flex-1 min-w-0">
                         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 mb-4 leading-tight break-words">
-               
                             {title}
                         </h1>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400">
@@ -182,9 +196,7 @@ function PostDetailPage() {
                 </div>
             </div>
 
-
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-  
                 <aside className="lg:w-60 xl:w-72 flex-shrink-0 lg:border-r lg:border-gray-700/50 lg:pr-8 xl:pr-12">
                     <div className="sticky top-24 space-y-5">
                         <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Author</h4>
@@ -203,16 +215,13 @@ function PostDetailPage() {
                 </aside>
 
                 <article className="flex-1 min-w-0">
-         
                     <div className="text-gray-200 text-lg leading-relaxed mb-12">
-                   
                         <p className="whitespace-pre-wrap">{content}</p>
                     </div>
 
                     <div className="pt-8 border-t border-gray-700/50">
-               
                         <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-                            <h3 className="text-2xl font-semibold text-gray-100"> 
+                            <h3 className="text-2xl font-semibold text-gray-100">
                                 Replies <span className="text-xl font-medium text-indigo-400">({replies.length})</span>
                             </h3>
                             {replies.length > 0 && (
@@ -232,42 +241,37 @@ function PostDetailPage() {
                             )}
                         </div>
 
-                     
-                        {isAuthenticated && (
-                            <div className="mb-8">
-                                {!isReplyFormVisible ? (
-                                    <button
-                                        onClick={() => setIsReplyFormVisible(true)}
-                                        className="inline-flex items-center text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-md shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500"
-                                      
-                                    >
-                                        Write a Reply
-                                    </button>
-                                ) : (
-                                    
-                                    <div className="bg-gray-700/60 border border-gray-600/70 rounded-lg p-4 transition-all duration-300 ease-out">
-                           
-                                        <CreateReplyForm
-                                            postId={post._id}
-                                            onReplySuccess={handleReplySuccess}
-                                            onCancel={() => setIsReplyFormVisible(false)}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        <div className="mb-8">
+                            {!isReplyFormVisible && (
+                                <button
+                                    onClick={handleReplyButtonClick}
+                                    className="inline-flex items-center text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2.5 rounded-md shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500"
+                                >
+                                    Write a Reply
+                                </button>
+                            )}
 
-                       
+                            {isReplyFormVisible && isAuthenticated && (
+                                <div className="bg-gray-700/60 border border-gray-600/70 rounded-lg p-4 transition-all duration-300 ease-out">
+                                    <CreateReplyForm
+                                        postId={post._id}
+                                        onReplySuccess={handleReplySuccess}
+                                        onCancel={() => setIsReplyFormVisible(false)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
                         <div
                             id="replies-list-container"
                             className={`overflow-hidden transition-all duration-500 ease-in-out ${
                                 areRepliesVisible ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'
                             }`}
                         >
-                            <div className="space-y-5"> 
+                            <div className="space-y-5">
                                 {post && post._id === postId && replies.length > 0 ? (
                                     replies.map((reply) => (
-                                        <ReplyItem key={reply._id} reply={reply} />
+                                        <ReplyItem key={reply._id} reply={reply} postId={postId} />
                                     ))
                                 ) : (
                                     areRepliesVisible && !isLoading && replies.length === 0 && (
