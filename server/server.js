@@ -15,7 +15,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 'https://niche-tech-forum.onrender.com' : ['http://localhost:5173', 'http://localhost:3000'],
+    origin: process.env.NODE_ENV === 'production' ? 'https://jsforum-miilstvrp-sura721s-projects.vercel.app' : ['http://localhost:5173', 'http://localhost:3000'],
     credentials: true
 }));
 
