@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -16,16 +16,64 @@ import EditPostPage from './pages/EditPostPage';
 import PostsPage from './pages/PostsPage';
 
 import { useAuthStore, selectIsAuthChecked } from './store/authStore.store';
+import { AnimatePresence, motion } from 'framer-motion';
+
+function AnimatedRoutes() {
+    const location = useLocation();
+
+    return (
+        <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<PageWrapper><HomePage /></PageWrapper>} />
+                <Route path="/posts" element={<PageWrapper><PostsPage /></PageWrapper>} />
+                <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
+                <Route path="/signup" element={<PageWrapper><SignupPage /></PageWrapper>} />
+                <Route path="/posts/:postId" element={<PageWrapper><PostDetailPage /></PageWrapper>} />
+                <Route path="/search" element={<PageWrapper><SearchPage /></PageWrapper>} />
+                <Route path="/category/:categoryName" element={<PageWrapper><CategoryPostsPage /></PageWrapper>} />
+
+                <Route path="/profile" element={
+                    <ProtectedRoute>
+                        <PageWrapper><ProfilePage /></PageWrapper>
+                    </ProtectedRoute>
+                } />
+                <Route path="/posts/new" element={
+                    <ProtectedRoute>
+                        <PageWrapper><CreatePostPage /></PageWrapper>
+                    </ProtectedRoute>
+                } />
+                <Route path="/posts/:postId/edit" element={
+                    <ProtectedRoute>
+                        <PageWrapper><EditPostPage /></PageWrapper>
+                    </ProtectedRoute>
+                } />
+            </Routes>
+        </AnimatePresence>
+    );
+}
+
+const PageWrapper = ({ children }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.95 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+        >
+            {children}
+        </motion.div>
+    );
+};
 
 function App() {
     const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
     const isAuthChecked = useAuthStore(selectIsAuthChecked);
 
-    useEffect(() => { 
-        checkAuthStatus(); 
+    useEffect(() => {
+        checkAuthStatus();
     }, [checkAuthStatus]);
 
-    if (!isAuthChecked) { 
+    if (!isAuthChecked) {
         return (
             <div className="flex justify-center items-center min-h-screen bg-gray-900">
                 <div className="flex items-center space-x-3">
@@ -33,7 +81,7 @@ function App() {
                     <span className="text-gray-300">Loading application...</span>
                 </div>
             </div>
-        ); 
+        );
     }
 
     return (
@@ -43,31 +91,7 @@ function App() {
                 <main className="flex-grow">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                         <div className="bg-gray-800/50 rounded-xl shadow-xl border border-gray-700 min-h-[calc(100vh-180px)]">
-                            <Routes>
-                                <Route path="/" element={<HomePage />} />
-                                <Route path="/posts" element={<PostsPage />} />
-                                <Route path="/login" element={<LoginPage />} />
-                                <Route path="/signup" element={<SignupPage />} />
-                                <Route path="/posts/:postId" element={<PostDetailPage />} />
-                                <Route path="/search" element={<SearchPage />} />
-                                <Route path="/category/:categoryName" element={<CategoryPostsPage />} />
-
-                                <Route path="/profile" element={
-                                    <ProtectedRoute>
-                                        <ProfilePage />
-                                    </ProtectedRoute>
-                                } />
-                                <Route path="/posts/new" element={
-                                    <ProtectedRoute>
-                                        <CreatePostPage />
-                                    </ProtectedRoute>
-                                } />
-                                <Route path="/posts/:postId/edit" element={
-                                    <ProtectedRoute>
-                                        <EditPostPage />
-                                    </ProtectedRoute>
-                                } />
-                            </Routes>
+                            <AnimatedRoutes />
                         </div>
                     </div>
                 </main>
